@@ -1,26 +1,26 @@
 mod_log_rotate
 ==============
 
-mod_log_rotate
+## mod_log_rotate
 
 Original from andya@apache.org (http://www.hexten.net/sw/mod_log_rotate/index.mhtml)
 
-INTRODUCTION 
+## INTRODUCTION 
 
   If you host a lot of virtual servers on a single Apache box and use the supplied rotatelogs  
   program to rotate the logs you'll notice that your process table is cluttered up with an instance 
   of rotatelogs for each virtual server. With mod_log_rotate the log rotation is handled by the server 
   process so you save a bunch of processes and file descriptors. 
  
-BUILD 
+## BUILD 
   See build.txt
  
-INSTALL
+## INSTALL
 
   Copy mod_log_rotate.so to your Apache 2.2.x modules folder
   .../apache22/modules/mod_log_rotate.so
 
-USAGE:
+## USAGE:
   
   LoadModule log_rotate_module modules/mod_log_rotate.so
   RotateLogs On
@@ -29,7 +29,7 @@ USAGE:
 
   CustomLog logs/%Y%m%d-%H%M%S.access.log common	
 
-CONFIGURATION DIRECTIVES:
+## CONFIGURATION DIRECTIVES:
   
   RotateLogs On|Off    Enable / disable automatic log rotation. Once enabled
                        mod_log_rotate takes responsibility for all log output
@@ -50,7 +50,7 @@ CONFIGURATION DIRECTIVES:
                        is on). For example RotateInterval 86400 60 will
                        cause logs to be rotated at 23:00 UTC.  
   
-AVAILABILITY
+## AVAILABILITY
   
   mod_log_rotate.c source code is available under the Apache License Version 2.0
   original at http://hexten.net/assets/apache2/mod_log_rotate.c
