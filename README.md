@@ -13,7 +13,7 @@ Original from andya@apache.org (http://www.hexten.net/sw/mod_log_rotate/index.mh
 	process so you save a bunch of processes and file descriptors. 
  
 ## BUILD 
-	See build.txt
+	See build.md
  
 ## INSTALL
 
