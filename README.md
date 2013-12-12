@@ -65,3 +65,6 @@ Original from andya@apache.org (http://www.hexten.net/sw/mod_log_rotate/index.mh
 
 ## AVAILABILITY of the modified version
 	https://github.com/JBlond/mod_log_rotate 
+
+## AVAILABILITY Windows binary x86 and x64
+	http://www.apachehaus.com/cgi-bin/download.plx
