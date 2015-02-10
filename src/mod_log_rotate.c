@@ -40,6 +40,7 @@
  */
 
 /* 2004/12/02 1.00      andya@apache.org    Initial release.
+ * 2015/20/02 1.01      leet31137@web.de    Updated Vesion with signature
  */
 #include "apr_anylock.h"
 #include "apr_file_io.h"
@@ -402,7 +403,7 @@ static void *merge_log_options(apr_pool_t *p, void *basev, void *addv) {
 /* map into the first apache */
 static int log_rotate_post_config( apr_pool_t * p, apr_pool_t * plog, apr_pool_t * ptemp, server_rec * s)
 {
-	ap_add_version_component(p, "mod_log_rotate/1.00");
+	ap_add_version_component(p, "mod_log_rotate/1.01");
 	return OK;
 }
 
