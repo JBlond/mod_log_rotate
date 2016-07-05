@@ -41,6 +41,7 @@
 
 /* 2004/12/02 1.00      andya@apache.org    Initial release.
  * 2015/20/02 1.01      leet31137@web.de    Updated Vesion with signature
+ * 2016/05/05 1.02      leet31337@web.de    Enabled debug logic for debugging
  */
 #include "apr_anylock.h"
 #include "apr_file_io.h"
@@ -121,7 +122,9 @@ static apr_file_t *ap_open_log(apr_pool_t *p, server_rec *s, const char *base, l
         }
 
         return ap_piped_log_write_fd(pl);
-    } else {
+    }
+    else
+    {
         apr_file_t *fd;
         apr_status_t rv;
         const char *name = ap_server_root_relative(p, base);
@@ -139,7 +142,9 @@ static apr_file_t *ap_open_log(apr_pool_t *p, server_rec *s, const char *base, l
 
                 apr_time_exp_gmt(&e, log_time);
                 name = ap_pstrftime(p, name, &e);
-            } else {
+            }
+            else
+            {
                 /* Synthesize the log name using the specified time in seconds as a
                  * suffix.  We subtract the offset here because it was added when
                  * quantizing the time but we want the name to reflect the actual
@@ -201,8 +206,8 @@ static apr_status_t ap_rotated_log_writer(request_rec *r, void *handle,
     if (NULL != rl && NULL != rl->fd) {
         if (rl->st.enabled) {
             apr_time_t logt = ap_get_quantized_time(rl, r->request_time);
-            /*ap_log_error(APLOG_MARK, APLOG_DEBUG, rv, r->server, "New: %lu, old: %lu",
-            (unsigned long) logt, (unsigned long) rl->logtime);*/
+            ap_log_error(APLOG_MARK, APLOG_DEBUG, rv, r->server, "New: %lu, old: %lu",
+            (unsigned long) logt, (unsigned long) rl->logtime);
             /* Decide if the quantized time has rolled over into a new slot. */
             if (logt != rl->logtime) {
                 /* Get the mutex */
@@ -260,7 +265,9 @@ static apr_status_t ap_rotated_log_writer(request_rec *r, void *handle,
         rv = apr_file_write(rl->fd, str, &len);
 
         return rv;
-    } else {
+    }
+    else
+    {
         return APR_SUCCESS; /* Should we complain? */
     }
 }
@@ -302,8 +309,8 @@ static void *ap_rotated_log_writer_init(apr_pool_t *p, server_rec *s, const char
     }
 #endif
 
-    rl->st          = *ls;
-    rl->logtime     = ap_get_quantized_time(rl, apr_time_now());
+    rl->st      = *ls;
+    rl->logtime = ap_get_quantized_time(rl, apr_time_now());
 
     if (rl->fd = ap_open_log(rl->pool, s, rl->fname, &rl->st, rl->logtime), NULL == rl->fd) {
         return NULL;
@@ -336,7 +343,9 @@ static const char *set_rotated_logs(cmd_parms *cmd, void *dummy, int flag) {
                     "can't install log rotator - ap_log_set_writer not available");
             ls->enabled = 0;
         }
-    } else {
+    }
+    else
+    {
         ls->enabled = 0;
     }
 
@@ -422,4 +431,3 @@ module AP_MODULE_DECLARE_DATA log_rotate_module = {
     rotate_log_cmds,            /* command apr_table_t */
     log_rotate_register_hooks   /* register hooks */
 };
-
