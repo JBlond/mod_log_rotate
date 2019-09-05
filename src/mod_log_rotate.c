@@ -412,13 +412,13 @@ static void *merge_log_options(apr_pool_t *p, void *basev, void *addv) {
 /* map into the first apache */
 static int log_rotate_post_config( apr_pool_t * p, apr_pool_t * plog, apr_pool_t * ptemp, server_rec * s)
 {
-	ap_add_version_component(p, "mod_log_rotate/1.02");
-	return OK;
+    ap_add_version_component(p, "mod_log_rotate/1.02");
+    return OK;
 }
 
 static void log_rotate_register_hooks(apr_pool_t *p)
 {
-	ap_hook_post_config( log_rotate_post_config,   NULL, NULL, APR_HOOK_MIDDLE );
+    ap_hook_post_config( log_rotate_post_config,   NULL, NULL, APR_HOOK_MIDDLE );
 }
 
 
