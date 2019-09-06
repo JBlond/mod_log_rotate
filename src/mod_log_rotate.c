@@ -344,8 +344,8 @@ static const char *set_rotated_logs(cmd_parms *cmd, void *dummy, int flag) {
     APR_OPTIONAL_FN_TYPE(ap_log_set_writer_init) *set_writer_init;
     APR_OPTIONAL_FN_TYPE(ap_log_set_writer)      *set_writer;
 
-    if (0 == flag) {
-        ls->enabled = 0;
+    ls->enabled = flag;
+    if (0 == ls->enabled) {
         return NULL;
     }
 
@@ -370,7 +370,6 @@ static const char *set_rotated_logs(cmd_parms *cmd, void *dummy, int flag) {
 
     set_writer_init(ap_rotated_log_writer_init);
     set_writer(ap_rotated_log_writer);
-    ls->enabled = 1;
 
     return NULL;
 }
