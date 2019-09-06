@@ -299,7 +299,7 @@ static void *ap_rotated_log_writer_init(apr_pool_t *p, server_rec *s, const char
     log_options *ls = ap_get_module_config(s->module_config, &log_rotate_module);
 
     rl = apr_palloc(p, sizeof(rotated_log));
-    rl->fname = apr_pstrdup(p, name);
+    rl->pool = NULL;
 
     if (rv = apr_pool_create(&rl->pool, p), APR_SUCCESS != rv) {
         ap_log_error(APLOG_MARK, APLOG_ERR, rv, s, "can't make log rotation pool.");
@@ -307,6 +307,7 @@ static void *ap_rotated_log_writer_init(apr_pool_t *p, server_rec *s, const char
     }
 
     rl->mutex.type = apr_anylock_none;
+    rl->fname = apr_pstrdup(p, name);
 
 #if APR_HAS_THREADS
     {
