@@ -214,34 +214,38 @@ static apr_status_t ap_lock_log(rotated_log *rl, request_rec *r) {
     /* Now check again in case someone else rotated the log while we waited
      * for the mutex.
      */
-    if (logt != rl->logtime) {
-        ofd = rl->fd;
-        rl->logtime = logt;
-        /* Create a new pool to provide storage for the new file.
-         * Once we have the new file open we'll destroy the old
-         * pool and make this one current.
-         */
-        par = apr_pool_parent_get(rl->pool);
-        if (rv = apr_pool_create(&np, par), APR_SUCCESS != rv) {
-            APR_ANYLOCK_UNLOCK(&rl->mutex);
-            return rv;
-        }
-        /* Atomically replace the current log file because other
-         * threads, perhaps those responsible for a long lived
-         * request, won't have blocked on the mutex.
-         */
-        if (rl->fd = ap_open_log(np, r->server, rl->fname, &rl->st, logt), NULL == rl->fd) {
-            /* Open failed so keep going with the old log... */
-            rl->fd = ofd;
-            /* ...and destroy the new pool. */
-            apr_pool_destroy(np);
-        } else {
-            /* Close the old log... */
-            ap_close_log(r->server, ofd);
-            /* ...and switch to the new pool. */
-            apr_pool_destroy(rl->pool);
-            rl->pool = np;
-        }
+    if (logt == rl->logtime) {
+        APR_ANYLOCK_UNLOCK(&rl->mutex);
+        return APR_SUCCESS;
+    }
+
+    ofd = rl->fd;
+    rl->logtime = logt;
+    /* Create a new pool to provide storage for the new file.
+     * Once we have the new file open we'll destroy the old
+     * pool and make this one current.
+     */
+    par = apr_pool_parent_get(rl->pool);
+    if (rv = apr_pool_create(&np, par), APR_SUCCESS != rv) {
+        APR_ANYLOCK_UNLOCK(&rl->mutex);
+        return rv;
+    }
+
+    /* Atomically replace the current log file because other
+     * threads, perhaps those responsible for a long lived
+     * request, won't have blocked on the mutex.
+     */
+    if (rl->fd = ap_open_log(np, r->server, rl->fname, &rl->st, logt), NULL == rl->fd) {
+        /* Open failed so keep going with the old log... */
+        rl->fd = ofd;
+        /* ...and destroy the new pool. */
+        apr_pool_destroy(np);
+    } else {
+        /* Close the old log... */
+        ap_close_log(r->server, ofd);
+        /* ...and switch to the new pool. */
+        apr_pool_destroy(rl->pool);
+        rl->pool = np;
     }
 
     APR_ANYLOCK_UNLOCK(&rl->mutex);
