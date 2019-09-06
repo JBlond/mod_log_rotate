@@ -271,16 +271,15 @@ static apr_status_t ap_rotated_log_writer(request_rec *r, void *handle,
     }
 
     if (NULL != rl->fd) {
-        if (rl->st.enabled) {
-            if (rv = ap_lock_log(rl, r), APR_SUCCESS != rv)
-                return rv;
-        }
-
         str = apr_palloc(r->pool, len + 1);
-
         for (i = 0, s = str; i < nelts; ++i) {
             memcpy(s, strs[i], strl[i]);
             s += strl[i];
+        }
+
+        if (rl->st.enabled) {
+            if (rv = ap_lock_log(rl, r), APR_SUCCESS != rv)
+                return rv;
         }
 
         rv = apr_file_write(rl->fd, str, &len);
