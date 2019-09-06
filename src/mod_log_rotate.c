@@ -197,6 +197,8 @@ static apr_time_t ap_get_quantized_time(rotated_log *rl, apr_time_t tm) {
  */
 static apr_status_t ap_lock_log(rotated_log *rl, request_rec *r) {
     apr_status_t rv = 0;
+    apr_file_t *ofd;
+    apr_pool_t *par, *np;
     apr_time_t logt = ap_get_quantized_time(rl, r->request_time);
     ap_log_error(APLOG_MARK, APLOG_DEBUG, rv, r->server, "New: %lu, old: %lu",
     (unsigned long) logt, (unsigned long) rl->logtime);
@@ -213,8 +215,7 @@ static apr_status_t ap_lock_log(rotated_log *rl, request_rec *r) {
      * for the mutex.
      */
     if (logt != rl->logtime) {
-        apr_file_t *ofd = rl->fd;
-        apr_pool_t *par, *np;
+        ofd = rl->fd;
         rl->logtime = logt;
         /* Create a new pool to provide storage for the new file.
          * Once we have the new file open we'll destroy the old
