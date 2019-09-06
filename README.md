@@ -31,11 +31,10 @@ Original from andya@apache.org (http://www.hexten.net/sw/mod_log_rotate/index.mh
 
 ## CONFIGURATION DIRECTIVES:
 
-	RotateLogs On|Off   Enable / disable automatic log rotation. Once enabled
+	RotateLogs On|Off   Enable / disable automatic log rotation. If enabled
 						mod_log_rotate takes responsibility for all log output
-						server wide even if RotateLogs Off is subsequently
-						used. That means that the BufferedLogs directive that
-						is implemented by mod_log_config will be ignored.
+						server wide. That means the BufferedLogs directive
+						implemented by mod_log_config will be ignored.
 
 	RotateLogsLocalTime Normally the log rotation interval is based on UTC.
 						For example an interval of 86400 (one day) will cause

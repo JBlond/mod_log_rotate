@@ -16,11 +16,10 @@
 /* Adds RotateLogs and supporting directives that allow logs to be rotated by
  * the server without having to pipe them through rotatelogs.
  *
- * RotateLogs On|Off    Enable / disable automatic log rotation. Once enabled
+ * RotateLogs On|Off    Enable / disable automatic log rotation. If enabled
  *                      mod_log_rotate takes responsibility for all log output
- *                      server wide even if RotateLogs Off is subsequently
- *                      used. That means that the BufferedLogs directive that
- *                      is implemented by mod_log_config will be ignored.
+ *                      server wide. That means the BufferedLogs directive
+ *                      implemented by mod_log_config will be ignored.
  *
  * RotateLogsLocalTime  Normally the log rotation interval is based on UTC.
  *                      For example an interval of 86400 (one day) will cause
@@ -341,36 +340,7 @@ static void *ap_rotated_log_writer_init(apr_pool_t *p, server_rec *s, const char
 
 static const char *set_rotated_logs(cmd_parms *cmd, void *dummy, int flag) {
     log_options *ls = ap_get_module_config(cmd->server->module_config, &log_rotate_module);
-    APR_OPTIONAL_FN_TYPE(ap_log_set_writer_init) *set_writer_init;
-    APR_OPTIONAL_FN_TYPE(ap_log_set_writer)      *set_writer;
-
     ls->enabled = flag;
-    if (0 == ls->enabled) {
-        return NULL;
-    }
-
-    /* Always hook the writer functions when we're enabled even if we've
-     * done it already. We can't unhook which means that once we've been
-     * enabled we become responsible for all transfer log output. Note that
-     * a subsequent BufferedLogs On in conf will clobber these hooks and
-     * disable us.
-     */
-    if (set_writer_init = APR_RETRIEVE_OPTIONAL_FN(ap_log_set_writer_init), NULL == set_writer_init) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, APR_SUCCESS, cmd->server,
-                "can't install log rotator - ap_log_set_writer_init not available");
-        ls->enabled = 0;
-        return NULL;
-    }
-    if (set_writer = APR_RETRIEVE_OPTIONAL_FN(ap_log_set_writer), NULL == set_writer) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, APR_SUCCESS, cmd->server,
-                "can't install log rotator - ap_log_set_writer not available");
-        ls->enabled = 0;
-        return NULL;
-    }
-
-    set_writer_init(ap_rotated_log_writer_init);
-    set_writer(ap_rotated_log_writer);
-
     return NULL;
 }
 
@@ -431,6 +401,34 @@ static void *merge_log_options(apr_pool_t *p, void *basev, void *addv) {
     return add;
 }
 
+/* set the log writer callbacks */
+static int log_rotate_open_logs(apr_pool_t *p, apr_pool_t *plog, apr_pool_t *ptemp, server_rec *s) {
+    log_options *ls = ap_get_module_config(s->module_config, &log_rotate_module);
+    APR_OPTIONAL_FN_TYPE(ap_log_set_writer_init) *set_writer_init;
+    APR_OPTIONAL_FN_TYPE(ap_log_set_writer)      *set_writer;
+
+    if (0 == ls->enabled) {
+        return DECLINED;
+    }
+    if (set_writer_init = APR_RETRIEVE_OPTIONAL_FN(ap_log_set_writer_init), NULL == set_writer_init) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, APR_SUCCESS, s,
+                "can't install log rotator - ap_log_set_writer_init not available");
+        ls->enabled = 0;
+        return DECLINED;
+    }
+    if (set_writer = APR_RETRIEVE_OPTIONAL_FN(ap_log_set_writer), NULL == set_writer) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, APR_SUCCESS, s,
+                "can't install log rotator - ap_log_set_writer not available");
+        ls->enabled = 0;
+        return DECLINED;
+    }
+
+    set_writer_init(ap_rotated_log_writer_init);
+    set_writer(ap_rotated_log_writer);
+
+    return OK;
+}
+
 /* map into the first apache */
 static int log_rotate_post_config( apr_pool_t * p, apr_pool_t * plog, apr_pool_t * ptemp, server_rec * s)
 {
@@ -440,6 +438,7 @@ static int log_rotate_post_config( apr_pool_t * p, apr_pool_t * plog, apr_pool_t
 
 static void log_rotate_register_hooks(apr_pool_t *p)
 {
+    ap_hook_open_logs(   log_rotate_open_logs,     NULL, NULL, APR_HOOK_FIRST  );
     ap_hook_post_config( log_rotate_post_config,   NULL, NULL, APR_HOOK_MIDDLE );
 }
 
