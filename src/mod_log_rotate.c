@@ -264,7 +264,13 @@ static apr_status_t ap_rotated_log_writer(request_rec *r, void *handle,
     apr_status_t rv = 0;
     rotated_log *rl = (rotated_log *) handle;
 
-    if (NULL != rl && NULL != rl->fd) {
+    if (NULL == rl) {
+        ap_log_rerror(APLOG_MARK, APLOG_CRIT, APR_EGENERAL, r,
+            "log rotation information not found.");
+        return APR_EGENERAL;
+    }
+
+    if (NULL != rl->fd) {
         if (rl->st.enabled) {
             if (rv = ap_lock_log(rl, r), APR_SUCCESS != rv)
                 return rv;
