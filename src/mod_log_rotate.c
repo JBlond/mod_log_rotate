@@ -341,6 +341,9 @@ static void *ap_rotated_log_writer_init(apr_pool_t *p, server_rec *s, const char
 
 static const char *set_rotated_logs(cmd_parms *cmd, void *dummy, int flag) {
     log_options *ls = ap_get_module_config(cmd->server->module_config, &log_rotate_module);
+    APR_OPTIONAL_FN_TYPE(ap_log_set_writer_init) *set_writer_init;
+    APR_OPTIONAL_FN_TYPE(ap_log_set_writer)      *set_writer;
+
     if (flag) {
         /* Always hook the writer functions when we're enabled even if we've
          * done it already. We can't unhook which means that once we've been
@@ -348,9 +351,6 @@ static const char *set_rotated_logs(cmd_parms *cmd, void *dummy, int flag) {
          * a subsequent BufferedLogs On in conf will clobber these hooks and
          * disable us.
          */
-        APR_OPTIONAL_FN_TYPE(ap_log_set_writer_init) *set_writer_init;
-        APR_OPTIONAL_FN_TYPE(ap_log_set_writer)      *set_writer;
-
         set_writer_init = APR_RETRIEVE_OPTIONAL_FN(ap_log_set_writer_init);
         set_writer      = APR_RETRIEVE_OPTIONAL_FN(ap_log_set_writer);
 
