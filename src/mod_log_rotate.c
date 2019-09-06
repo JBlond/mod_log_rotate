@@ -344,28 +344,27 @@ static const char *set_rotated_logs(cmd_parms *cmd, void *dummy, int flag) {
     APR_OPTIONAL_FN_TYPE(ap_log_set_writer_init) *set_writer_init;
     APR_OPTIONAL_FN_TYPE(ap_log_set_writer)      *set_writer;
 
-    if (flag) {
-        /* Always hook the writer functions when we're enabled even if we've
-         * done it already. We can't unhook which means that once we've been
-         * enabled we become responsible for all transfer log output. Note that
-         * a subsequent BufferedLogs On in conf will clobber these hooks and
-         * disable us.
-         */
-        set_writer_init = APR_RETRIEVE_OPTIONAL_FN(ap_log_set_writer_init);
-        set_writer      = APR_RETRIEVE_OPTIONAL_FN(ap_log_set_writer);
-
-        if (NULL != set_writer_init && NULL != set_writer) {
-            set_writer_init(ap_rotated_log_writer_init);
-            set_writer(ap_rotated_log_writer);
-            ls->enabled = 1;
-        } else {
-            ap_log_error(APLOG_MARK, APLOG_ERR, APR_SUCCESS, cmd->server,
-                    "can't install log rotator - ap_log_set_writer not available");
-            ls->enabled = 0;
-        }
+    if (0 == flag) {
+        ls->enabled = 0;
+        return NULL;
     }
-    else
-    {
+
+    /* Always hook the writer functions when we're enabled even if we've
+     * done it already. We can't unhook which means that once we've been
+     * enabled we become responsible for all transfer log output. Note that
+     * a subsequent BufferedLogs On in conf will clobber these hooks and
+     * disable us.
+     */
+    set_writer_init = APR_RETRIEVE_OPTIONAL_FN(ap_log_set_writer_init);
+    set_writer      = APR_RETRIEVE_OPTIONAL_FN(ap_log_set_writer);
+
+    if (NULL != set_writer_init && NULL != set_writer) {
+        set_writer_init(ap_rotated_log_writer_init);
+        set_writer(ap_rotated_log_writer);
+        ls->enabled = 1;
+    } else {
+        ap_log_error(APLOG_MARK, APLOG_ERR, APR_SUCCESS, cmd->server,
+                "can't install log rotator - ap_log_set_writer not available");
         ls->enabled = 0;
     }
 
