@@ -355,18 +355,22 @@ static const char *set_rotated_logs(cmd_parms *cmd, void *dummy, int flag) {
      * a subsequent BufferedLogs On in conf will clobber these hooks and
      * disable us.
      */
-    set_writer_init = APR_RETRIEVE_OPTIONAL_FN(ap_log_set_writer_init);
-    set_writer      = APR_RETRIEVE_OPTIONAL_FN(ap_log_set_writer);
-
-    if (NULL != set_writer_init && NULL != set_writer) {
-        set_writer_init(ap_rotated_log_writer_init);
-        set_writer(ap_rotated_log_writer);
-        ls->enabled = 1;
-    } else {
+    if (set_writer_init = APR_RETRIEVE_OPTIONAL_FN(ap_log_set_writer_init), NULL == set_writer_init) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, APR_SUCCESS, cmd->server,
+                "can't install log rotator - ap_log_set_writer_init not available");
+        ls->enabled = 0;
+        return NULL;
+    }
+    if (set_writer = APR_RETRIEVE_OPTIONAL_FN(ap_log_set_writer), NULL == set_writer) {
         ap_log_error(APLOG_MARK, APLOG_ERR, APR_SUCCESS, cmd->server,
                 "can't install log rotator - ap_log_set_writer not available");
         ls->enabled = 0;
+        return NULL;
     }
+
+    set_writer_init(ap_rotated_log_writer_init);
+    set_writer(ap_rotated_log_writer);
+    ls->enabled = 1;
 
     return NULL;
 }
