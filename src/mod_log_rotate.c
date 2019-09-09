@@ -101,6 +101,7 @@ static const char *ap_pstrftime(apr_pool_t *p, const char *format, apr_time_exp_
 static apr_file_t *ap_open_log(apr_pool_t *p, server_rec *s, const char *base, log_options *ls, apr_time_t tm) {
     apr_file_t *fd;
     apr_status_t rv;
+    apr_time_t log_time;
     const char *name = ap_server_root_relative(p, base);
 
     if (NULL == name) {
@@ -110,7 +111,7 @@ static apr_file_t *ap_open_log(apr_pool_t *p, server_rec *s, const char *base, l
     }
 
     if (ls->enabled) {
-        apr_time_t log_time = tm - ls->offset;
+        log_time = tm - ls->offset;
         if (strchr(base, '%') != NULL) {
             apr_time_exp_t e;
 
