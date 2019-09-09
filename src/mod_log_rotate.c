@@ -104,17 +104,10 @@ static const char *ap_pstrftime(apr_pool_t *p, const char *format, apr_time_exp_
     return buf;
 }
 
-static apr_file_t *ap_open_log(apr_pool_t *p, server_rec *s, const char *base, log_options *ls, apr_time_t tm) {
+static apr_file_t *ap_open_log(apr_pool_t *p, server_rec *s, const char *name, log_options *ls, apr_time_t tm) {
     apr_file_t *fd;
     apr_status_t rv;
     apr_time_t log_time;
-    const char *name = ap_server_root_relative(p, base);
-
-    if (NULL == name) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, APR_EBADPATH, s,
-                        "invalid transfer log path %s.", base);
-        return NULL;
-    }
 
     log_time = tm - ls->offset;
     if (RL_SUBSTITUTIONS == ls->enabled) {
@@ -330,11 +323,17 @@ static void *ap_rotated_log_writer_init(apr_pool_t *p, server_rec *s, const char
     }
 #endif
 
-    rl->fname   = apr_pstrdup(p, name);
     rl->logtime = ap_get_quantized_time(rl, apr_time_now());
 
-    if (strchr(rl->fname, '%') != NULL) {
+    if (strchr(name, '%') != NULL) {
         rl->st.enabled = RL_SUBSTITUTIONS;
+    }
+
+    rl->fname = ap_server_root_relative(p, name);
+    if (NULL == rl->fname) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, APR_EBADPATH, s,
+                        "invalid transfer log path %s.", name);
+        return NULL;
     }
 
     if (rl->fd = ap_open_log(rl->pool, s, rl->fname, &rl->st, rl->logtime), NULL == rl->fd) {
