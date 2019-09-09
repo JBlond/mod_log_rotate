@@ -268,20 +268,19 @@ static apr_status_t ap_rotated_log_writer(request_rec *r, void *handle,
 /* Called my mod_log_config to initialise a log writer.
  */
 static void *ap_rotated_log_writer_init(apr_pool_t *p, server_rec *s, const char* name) {
-    rotated_log *rl;
     apr_status_t rv;
     log_options *ls = ap_get_module_config(s->module_config, &log_rotate_module);
-
-    rl = apr_palloc(p, sizeof(rotated_log));
-    rl->pool = NULL;
+    rotated_log *rl = apr_palloc(p, sizeof(rotated_log));
+    rl->pool        = NULL;
+    rl->fname       = NULL;
+    rl->mutex.type  = apr_anylock_none;
+    rl->logtime     = 0;
+    rl->st          = *ls;
 
     if (rv = apr_pool_create(&rl->pool, p), APR_SUCCESS != rv) {
         ap_log_error(APLOG_MARK, APLOG_ERR, rv, s, "can't make log rotation pool.");
         return NULL;
     }
-
-    rl->mutex.type = apr_anylock_none;
-    rl->fname = apr_pstrdup(p, name);
 
 #if APR_HAS_THREADS
     {
@@ -303,7 +302,7 @@ static void *ap_rotated_log_writer_init(apr_pool_t *p, server_rec *s, const char
     }
 #endif
 
-    rl->st      = *ls;
+    rl->fname   = apr_pstrdup(p, name);
     rl->logtime = ap_get_quantized_time(rl, apr_time_now());
 
     /* We have piped log handling here because once log rotation has been
