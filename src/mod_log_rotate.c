@@ -298,11 +298,6 @@ static void *ap_rotated_log_writer_init(apr_pool_t *p, server_rec *s, const char
         return rl;
     }
 
-    if (rv = apr_pool_create(&rl->pool, p), APR_SUCCESS != rv) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, rv, s, "can't make log rotation pool.");
-        return NULL;
-    }
-
 #if APR_HAS_THREADS
     {
         int mpm_threads;
@@ -333,6 +328,11 @@ static void *ap_rotated_log_writer_init(apr_pool_t *p, server_rec *s, const char
     if (NULL == rl->fname) {
         ap_log_error(APLOG_MARK, APLOG_ERR, APR_EBADPATH, s,
                         "invalid transfer log path %s.", name);
+        return NULL;
+    }
+
+    if (rv = apr_pool_create(&rl->pool, p), APR_SUCCESS != rv) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, rv, s, "can't make log rotation pool.");
         return NULL;
     }
 
