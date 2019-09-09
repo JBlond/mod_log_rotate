@@ -260,9 +260,11 @@ static apr_status_t ap_rotated_log_writer(request_rec *r, void *handle,
         return rv;
     }
 
-    rv = apr_file_write(rl->fd, str, &len);
+    if (rv = apr_file_write(rl->fd, str, &len), APR_SUCCESS != rv) {
+        return rv;
+    }
 
-    return rv;
+    return APR_SUCCESS;
 }
 
 /* Called my mod_log_config to initialise a log writer.
