@@ -286,12 +286,10 @@ static void *ap_rotated_log_writer_init(apr_pool_t *p, server_rec *s, const char
     if (*name == '|') {
         piped_log *pl;
 
-        if (rl->st.enabled) {
-            /* Can't rotate a piped log */
-            rl->st.enabled = 0;
-            ap_log_error(APLOG_MARK, APLOG_WARNING, APR_SUCCESS, s,
-                            "disabled log rotation for piped log %s.", name);
-        }
+        /* Can't rotate a piped log */
+        rl->st.enabled = 0;
+        ap_log_error(APLOG_MARK, APLOG_WARNING, APR_SUCCESS, s,
+                        "disabled log rotation for piped log %s.", name);
 
         if (pl = ap_open_piped_log(p, name + 1), NULL == pl) {
            return NULL;
