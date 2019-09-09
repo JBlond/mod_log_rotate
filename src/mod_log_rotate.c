@@ -277,6 +277,31 @@ static void *ap_rotated_log_writer_init(apr_pool_t *p, server_rec *s, const char
     rl->logtime     = 0;
     rl->st          = *ls;
 
+    /* We have piped log handling here because once log rotation has been
+     * enabled we become responsible for /all/ transfer log output server
+     * wide. That's a consequence of the way the log output hooks in
+     * mod_log_config are implemented. Unfortunately this means we have to
+     * duplicate functionality from mod_log_config. Note that we don't
+     * support the buffered logging mode that mlc implements.
+     */
+    if (*name == '|') {
+        piped_log *pl;
+
+        if (rl->st.enabled) {
+            /* Can't rotate a piped log */
+            rl->st.enabled = 0;
+            ap_log_error(APLOG_MARK, APLOG_WARNING, APR_SUCCESS, s,
+                            "disabled log rotation for piped log %s.", name);
+        }
+
+        if (pl = ap_open_piped_log(p, name + 1), NULL == pl) {
+           return NULL;
+        }
+
+        rl->fd = ap_piped_log_write_fd(pl);
+        return rl;
+    }
+
     if (rv = apr_pool_create(&rl->pool, p), APR_SUCCESS != rv) {
         ap_log_error(APLOG_MARK, APLOG_ERR, rv, s, "can't make log rotation pool.");
         return NULL;
@@ -304,31 +329,6 @@ static void *ap_rotated_log_writer_init(apr_pool_t *p, server_rec *s, const char
 
     rl->fname   = apr_pstrdup(p, name);
     rl->logtime = ap_get_quantized_time(rl, apr_time_now());
-
-    /* We have piped log handling here because once log rotation has been
-     * enabled we become responsible for /all/ transfer log output server
-     * wide. That's a consequence of the way the log output hooks in
-     * mod_log_config are implemented. Unfortunately this means we have to
-     * duplicate functionality from mod_log_config. Note that we don't
-     * support the buffered logging mode that mlc implements.
-     */
-    if (*name == '|') {
-        piped_log *pl;
-
-        if (rl->st.enabled) {
-            /* Can't rotate a piped log */
-            rl->st.enabled = 0;
-            ap_log_error(APLOG_MARK, APLOG_WARNING, APR_SUCCESS, s,
-                            "disabled log rotation for piped log %s.", name);
-        }
-
-        if (pl = ap_open_piped_log(p, name + 1), NULL == pl) {
-           return NULL;
-        }
-
-        rl->fd = ap_piped_log_write_fd(pl);
-        return rl;
-    }
 
     if (rl->fd = ap_open_log(rl->pool, s, rl->fname, &rl->st, rl->logtime), NULL == rl->fd) {
         return NULL;
