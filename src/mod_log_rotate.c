@@ -85,7 +85,8 @@ typedef struct {
     const char      *fname;         /* Basename for logs without extension  */
     apr_file_t      *fd;            /* Current open log file                */
     apr_time_t      logtime;        /* Quantised time of current log file   */
-    apr_anylock_t   write_lock;
+    apr_anylock_t   read_lock;      /* An alias for the read lock           */
+    apr_anylock_t   write_lock;     /* An alias for the write lock          */
 
     log_options     st;             /* Embedded config options              */
 } rotated_log;
@@ -272,6 +273,7 @@ static void *ap_rotated_log_writer_init(apr_pool_t *p, server_rec *s, const char
     rl->pool            = NULL;
     rl->fname           = NULL;
     rl->write_lock.type = apr_anylock_none;
+    rl->read_lock.type  = apr_anylock_none;
     rl->logtime         = 0;
     rl->st              = *ls;
 
@@ -311,15 +313,14 @@ static void *ap_rotated_log_writer_init(apr_pool_t *p, server_rec *s, const char
 
         ap_mpm_query(AP_MPMQ_MAX_THREADS, &mpm_threads);
         if (mpm_threads > 1) {
-            apr_status_t rv;
-
-            rl->write_lock.type = apr_anylock_threadmutex;
-            rv = apr_thread_mutex_create(&rl->write_lock.lock.tm, APR_THREAD_MUTEX_DEFAULT, p);
-            if (rv != APR_SUCCESS) {
+            if (rv = apr_thread_rwlock_create(&rl->write_lock.lock.rw, p), APR_SUCCESS != rv) {
                 ap_log_error(APLOG_MARK, APLOG_CRIT, rv, s,
                         "could not initialize log rotation write lock, "
                         "transfer log may become corrupted");
-                rl->write_lock.type = apr_anylock_none;
+            } else {
+                rl->write_lock.type = apr_anylock_writelock;
+                rl->read_lock.type = apr_anylock_readlock;
+                rl->read_lock.lock.rw = rl->write_lock.lock.rw;
             }
         }
     }
