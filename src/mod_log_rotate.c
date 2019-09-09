@@ -122,47 +122,45 @@ static apr_file_t *ap_open_log(apr_pool_t *p, server_rec *s, const char *base, l
 
         return ap_piped_log_write_fd(pl);
     }
-    else
-    {
-        apr_file_t *fd;
-        apr_status_t rv;
-        const char *name = ap_server_root_relative(p, base);
 
-        if (NULL == name) {
-            ap_log_error(APLOG_MARK, APLOG_ERR, APR_EBADPATH, s,
-                            "invalid transfer log path %s.", base);
-            return NULL;
-        }
+    apr_file_t *fd;
+    apr_status_t rv;
+    const char *name = ap_server_root_relative(p, base);
 
-        if (ls->enabled) {
-            apr_time_t log_time = tm - ls->offset;
-            if (strchr(base, '%') != NULL) {
-                apr_time_exp_t e;
-
-                apr_time_exp_gmt(&e, log_time);
-                name = ap_pstrftime(p, name, &e);
-            }
-            else
-            {
-                /* Synthesize the log name using the specified time in seconds as a
-                 * suffix.  We subtract the offset here because it was added when
-                 * quantizing the time but we want the name to reflect the actual
-                 * time when the log rotated. We don't reverse the local time
-                 * adjustment because, presumably, if you've specified local time
-                 * logging you want the filenames to use local time.
-                 */
-                name = apr_psprintf(p, "%s.%" APR_TIME_T_FMT, name, apr_time_sec(log_time));
-            }
-        }
-
-        if (rv = apr_file_open(&fd, name, xfer_flags, xfer_perms, p), APR_SUCCESS != rv) {
-            ap_log_error(APLOG_MARK, APLOG_ERR, rv, s,
-                            "could not open transfer log file %s.", name);
-            return NULL;
-        }
-
-        return fd;
+    if (NULL == name) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, APR_EBADPATH, s,
+                        "invalid transfer log path %s.", base);
+        return NULL;
     }
+
+    if (ls->enabled) {
+        apr_time_t log_time = tm - ls->offset;
+        if (strchr(base, '%') != NULL) {
+            apr_time_exp_t e;
+
+            apr_time_exp_gmt(&e, log_time);
+            name = ap_pstrftime(p, name, &e);
+        }
+        else
+        {
+            /* Synthesize the log name using the specified time in seconds as a
+                * suffix.  We subtract the offset here because it was added when
+                * quantizing the time but we want the name to reflect the actual
+                * time when the log rotated. We don't reverse the local time
+                * adjustment because, presumably, if you've specified local time
+                * logging you want the filenames to use local time.
+                */
+            name = apr_psprintf(p, "%s.%" APR_TIME_T_FMT, name, apr_time_sec(log_time));
+        }
+    }
+
+    if (rv = apr_file_open(&fd, name, xfer_flags, xfer_perms, p), APR_SUCCESS != rv) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, rv, s,
+                        "could not open transfer log file %s.", name);
+        return NULL;
+    }
+
+    return fd;
 }
 
 static apr_status_t ap_close_log(server_rec *s, apr_file_t *fd) {
