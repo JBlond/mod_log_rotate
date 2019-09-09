@@ -291,10 +291,17 @@ static void *ap_rotated_log_writer_init(apr_pool_t *p, server_rec *s, const char
                         "disabled log rotation for piped log %s.", name);
 
         if (pl = ap_open_piped_log(p, name + 1), NULL == pl) {
+            ap_log_error(APLOG_MARK, APLOG_CRIT, APR_EGENERAL, s,
+              "piped log file not loaded.");
            return NULL;
         }
 
-        rl->fd = ap_piped_log_write_fd(pl);
+        if (rl->fd = ap_piped_log_write_fd(pl), NULL == rl->fd) {
+            ap_log_error(APLOG_MARK, APLOG_CRIT, APR_EGENERAL, s,
+              "piped log file handle not loaded.");
+            return NULL;
+        }
+
         return rl;
     }
 
