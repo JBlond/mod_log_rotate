@@ -242,26 +242,24 @@ static apr_status_t ap_rotated_log_writer(request_rec *r, void *handle,
         return APR_EGENERAL;
     }
 
-    if (NULL != rl->fd) {
-        str = apr_palloc(r->pool, len + 1);
-        for (i = 0, s = str; i < nelts; ++i) {
-            memcpy(s, strs[i], strl[i]);
-            s += strl[i];
-        }
-
-        if (RL_DISABLED != rl->st.enabled) {
-            if (rv = ap_lock_log(rl, r), APR_SUCCESS != rv)
-                return rv;
-        }
-
-        rv = apr_file_write(rl->fd, str, &len);
-
-        return rv;
-    }
-    else
-    {
+    if (NULL == rl->fd)  {
         return APR_SUCCESS; /* Should we complain? */
     }
+
+    str = apr_palloc(r->pool, len + 1);
+    for (i = 0, s = str; i < nelts; ++i) {
+        memcpy(s, strs[i], strl[i]);
+        s += strl[i];
+    }
+
+    if (RL_DISABLED != rl->st.enabled) {
+        if (rv = ap_lock_log(rl, r), APR_SUCCESS != rv)
+            return rv;
+    }
+
+    rv = apr_file_write(rl->fd, str, &len);
+
+    return rv;
 }
 
 /* Called my mod_log_config to initialise a log writer.
