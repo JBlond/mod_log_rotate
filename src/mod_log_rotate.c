@@ -67,8 +67,14 @@ static apr_fileperms_t xfer_perms = APR_OS_DEFAULT;
 
 module AP_MODULE_DECLARE_DATA log_rotate_module;
 
+typedef enum {
+    RL_DISABLED      = 0,           /* Rotation is disabled in the config   */
+    RL_ENABLED       = 1,           /* Rotation is enabled in the config    */
+    RL_SUBSTITUTIONS = 2            /* Rotation and substitution is enabled */
+} rl_enabled;
+
 typedef struct {
-    int             enabled;        /* Rotation enabled                     */
+    rl_enabled      enabled;        /* Rotation enabled                     */
     apr_time_t      interval;       /* Rotation interval                    */
     apr_time_t      offset;         /* Offset from midnight                 */
     int             localt;         /* Use local time instead of GMT        */
@@ -111,7 +117,7 @@ static apr_file_t *ap_open_log(apr_pool_t *p, server_rec *s, const char *base, l
     }
 
     log_time = tm - ls->offset;
-    if (strchr(base, '%') != NULL) {
+    if (RL_SUBSTITUTIONS == ls->enabled) {
         apr_time_exp_t e;
 
         apr_time_exp_gmt(&e, log_time);
@@ -249,7 +255,7 @@ static apr_status_t ap_rotated_log_writer(request_rec *r, void *handle,
             s += strl[i];
         }
 
-        if (rl->st.enabled) {
+        if (RL_DISABLED != rl->st.enabled) {
             if (rv = ap_lock_log(rl, r), APR_SUCCESS != rv)
                 return rv;
         }
@@ -287,7 +293,7 @@ static void *ap_rotated_log_writer_init(apr_pool_t *p, server_rec *s, const char
         piped_log *pl;
 
         /* Can't rotate a piped log */
-        rl->st.enabled = 0;
+        rl->st.enabled = RL_DISABLED;
         ap_log_error(APLOG_MARK, APLOG_WARNING, APR_SUCCESS, s,
                         "disabled log rotation for piped log %s.", name);
 
@@ -327,6 +333,10 @@ static void *ap_rotated_log_writer_init(apr_pool_t *p, server_rec *s, const char
     rl->fname   = apr_pstrdup(p, name);
     rl->logtime = ap_get_quantized_time(rl, apr_time_now());
 
+    if (strchr(rl->fname, '%') != NULL) {
+        rl->st.enabled = RL_SUBSTITUTIONS;
+    }
+
     if (rl->fd = ap_open_log(rl->pool, s, rl->fname, &rl->st, rl->logtime), NULL == rl->fd) {
         return NULL;
     }
@@ -336,7 +346,7 @@ static void *ap_rotated_log_writer_init(apr_pool_t *p, server_rec *s, const char
 
 static const char *set_rotated_logs(cmd_parms *cmd, void *dummy, int flag) {
     log_options *ls = ap_get_module_config(cmd->server->module_config, &log_rotate_module);
-    ls->enabled = flag;
+    ls->enabled = flag ? RL_ENABLED : RL_DISABLED;
     return NULL;
 }
 
@@ -380,7 +390,7 @@ static void *make_log_options(apr_pool_t *p, server_rec *s) {
     log_options *ls;
 
     ls = (log_options *) apr_palloc(p, sizeof(log_options));
-    ls->enabled     = 1;
+    ls->enabled     = RL_ENABLED;
     ls->interval    = INTERVAL_DEFAULT;
     ls->offset      = 0;
     ls->localt      = 0;
@@ -403,19 +413,19 @@ static int log_rotate_open_logs(apr_pool_t *p, apr_pool_t *plog, apr_pool_t *pte
     APR_OPTIONAL_FN_TYPE(ap_log_set_writer_init) *set_writer_init;
     APR_OPTIONAL_FN_TYPE(ap_log_set_writer)      *set_writer;
 
-    if (0 == ls->enabled) {
+    if (RL_DISABLED == ls->enabled) {
         return DECLINED;
     }
     if (set_writer_init = APR_RETRIEVE_OPTIONAL_FN(ap_log_set_writer_init), NULL == set_writer_init) {
         ap_log_error(APLOG_MARK, APLOG_ERR, APR_SUCCESS, s,
                 "can't install log rotator - ap_log_set_writer_init not available");
-        ls->enabled = 0;
+        ls->enabled = RL_DISABLED;
         return DECLINED;
     }
     if (set_writer = APR_RETRIEVE_OPTIONAL_FN(ap_log_set_writer), NULL == set_writer) {
         ap_log_error(APLOG_MARK, APLOG_ERR, APR_SUCCESS, s,
                 "can't install log rotator - ap_log_set_writer not available");
-        ls->enabled = 0;
+        ls->enabled = RL_DISABLED;
         return DECLINED;
     }
 
