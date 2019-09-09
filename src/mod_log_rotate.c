@@ -252,9 +252,12 @@ static apr_status_t ap_rotated_log_writer(request_rec *r, void *handle,
         s += strl[i];
     }
 
-    if (RL_DISABLED != rl->st.enabled) {
-        if (rv = ap_lock_log(rl, r), APR_SUCCESS != rv)
-            return rv;
+    if (RL_DISABLED == rl->st.enabled) {
+        return apr_file_write(rl->fd, str, &len);
+    }
+
+    if (rv = ap_lock_log(rl, r), APR_SUCCESS != rv) {
+        return rv;
     }
 
     rv = apr_file_write(rl->fd, str, &len);
