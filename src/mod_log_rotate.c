@@ -85,7 +85,7 @@ typedef struct {
     const char      *fname;         /* Basename for logs without extension  */
     apr_file_t      *fd;            /* Current open log file                */
     apr_time_t      logtime;        /* Quantised time of current log file   */
-    apr_anylock_t   mutex;
+    apr_anylock_t   write_lock;
 
     log_options     st;             /* Embedded config options              */
 } rotated_log;
@@ -177,16 +177,16 @@ static apr_status_t ap_lock_log(rotated_log *rl, request_rec *r) {
     /* Decide if the quantized time has rolled over into a new slot. */
     if (logt == rl->logtime) { return APR_SUCCESS; }
 
-    /* Get the mutex */
-    if (rv = APR_ANYLOCK_LOCK(&rl->mutex), APR_SUCCESS != rv) {
+    /* Get the write lock */
+    if (rv = APR_ANYLOCK_LOCK(&rl->write_lock), APR_SUCCESS != rv) {
         return rv;
     }
 
     /* Now check again in case someone else rotated the log while we waited
-     * for the mutex.
+     * for the write lock.
      */
     if (logt == rl->logtime) {
-        APR_ANYLOCK_UNLOCK(&rl->mutex);
+        APR_ANYLOCK_UNLOCK(&rl->write_lock);
         return APR_SUCCESS;
     }
 
@@ -198,13 +198,13 @@ static apr_status_t ap_lock_log(rotated_log *rl, request_rec *r) {
      */
     par = apr_pool_parent_get(rl->pool);
     if (rv = apr_pool_create(&np, par), APR_SUCCESS != rv) {
-        APR_ANYLOCK_UNLOCK(&rl->mutex);
+        APR_ANYLOCK_UNLOCK(&rl->write_lock);
         return rv;
     }
 
     /* Atomically replace the current log file because other
      * threads, perhaps those responsible for a long lived
-     * request, won't have blocked on the mutex.
+     * request, won't have blocked on the write lock.
      */
     if (rl->fd = ap_open_log(np, r->server, rl->fname, &rl->st, logt), NULL == rl->fd) {
         /* Open failed so keep going with the old log... */
@@ -219,7 +219,7 @@ static apr_status_t ap_lock_log(rotated_log *rl, request_rec *r) {
         rl->pool = np;
     }
 
-    APR_ANYLOCK_UNLOCK(&rl->mutex);
+    APR_ANYLOCK_UNLOCK(&rl->write_lock);
 
     return APR_SUCCESS;
 }
@@ -267,13 +267,13 @@ static apr_status_t ap_rotated_log_writer(request_rec *r, void *handle,
  */
 static void *ap_rotated_log_writer_init(apr_pool_t *p, server_rec *s, const char* name) {
     apr_status_t rv;
-    log_options *ls = ap_get_module_config(s->module_config, &log_rotate_module);
-    rotated_log *rl = apr_palloc(p, sizeof(rotated_log));
-    rl->pool        = NULL;
-    rl->fname       = NULL;
-    rl->mutex.type  = apr_anylock_none;
-    rl->logtime     = 0;
-    rl->st          = *ls;
+    log_options *ls     = ap_get_module_config(s->module_config, &log_rotate_module);
+    rotated_log *rl     = apr_palloc(p, sizeof(rotated_log));
+    rl->pool            = NULL;
+    rl->fname           = NULL;
+    rl->write_lock.type = apr_anylock_none;
+    rl->logtime         = 0;
+    rl->st              = *ls;
 
     /* We have piped log handling here because once log rotation has been
      * enabled we become responsible for /all/ transfer log output server
@@ -306,13 +306,13 @@ static void *ap_rotated_log_writer_init(apr_pool_t *p, server_rec *s, const char
         if (mpm_threads > 1) {
             apr_status_t rv;
 
-            rl->mutex.type = apr_anylock_threadmutex;
-            rv = apr_thread_mutex_create(&rl->mutex.lock.tm, APR_THREAD_MUTEX_DEFAULT, p);
+            rl->write_lock.type = apr_anylock_threadmutex;
+            rv = apr_thread_mutex_create(&rl->write_lock.lock.tm, APR_THREAD_MUTEX_DEFAULT, p);
             if (rv != APR_SUCCESS) {
                 ap_log_error(APLOG_MARK, APLOG_CRIT, rv, s,
-                        "could not initialize log rotation mutex, "
+                        "could not initialize log rotation write lock, "
                         "transfer log may become corrupted");
-                rl->mutex.type = apr_anylock_none;
+                rl->write_lock.type = apr_anylock_none;
             }
         }
     }
