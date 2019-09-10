@@ -165,7 +165,8 @@ static apr_time_t ap_get_quantized_time(rotated_log *rl, apr_time_t tm) {
 }
 
 /* Get a lock on the log, rotating to a new log if the quantized time has
- * rolled over.
+ * rolled over. If it returns APR_SUCCESS, the lock is held, otherwise it is
+ * not.
  */
 static apr_status_t ap_lock_log(rotated_log *rl, request_rec *r) {
     apr_status_t rv = 0;
@@ -175,8 +176,18 @@ static apr_status_t ap_lock_log(rotated_log *rl, request_rec *r) {
     ap_log_error(APLOG_MARK, APLOG_DEBUG, rv, r->server, "New: %lu, old: %lu",
     (unsigned long) logt, (unsigned long) rl->logtime);
 
+    /* Get a read lock */
+    if (rv = APR_ANYLOCK_LOCK(&rl->read_lock), APR_SUCCESS != rv) {
+        return rv;
+    }
+
     /* Decide if the quantized time has rolled over into a new slot. */
     if (logt == rl->logtime) { return APR_SUCCESS; }
+
+    /* Unlock the read lock */
+    if (rv = APR_ANYLOCK_UNLOCK(&rl->read_lock), APR_SUCCESS != rv) {
+        return rv;
+    }
 
     /* Get the write lock */
     if (rv = APR_ANYLOCK_LOCK(&rl->write_lock), APR_SUCCESS != rv) {
@@ -187,8 +198,13 @@ static apr_status_t ap_lock_log(rotated_log *rl, request_rec *r) {
      * for the write lock.
      */
     if (logt == rl->logtime) {
-        APR_ANYLOCK_UNLOCK(&rl->write_lock);
-        return APR_SUCCESS;
+        /* Unlock the write lock */
+        if (rv = APR_ANYLOCK_UNLOCK(&rl->write_lock), APR_SUCCESS != rv) {
+            return rv;
+        }
+
+        /* Get the read lock */
+        return APR_ANYLOCK_LOCK(&rl->write_lock);
     }
 
     ofd = rl->fd;
@@ -203,10 +219,7 @@ static apr_status_t ap_lock_log(rotated_log *rl, request_rec *r) {
         return rv;
     }
 
-    /* Atomically replace the current log file because other
-     * threads, perhaps those responsible for a long lived
-     * request, won't have blocked on the write lock.
-     */
+    /* Replace the current log file */
     if (rl->fd = ap_open_log(np, r->server, rl->fname, &rl->st, logt), NULL == rl->fd) {
         /* Open failed so keep going with the old log... */
         rl->fd = ofd;
@@ -220,9 +233,19 @@ static apr_status_t ap_lock_log(rotated_log *rl, request_rec *r) {
         rl->pool = np;
     }
 
-    APR_ANYLOCK_UNLOCK(&rl->write_lock);
+    /* Unlock the write lock */
+    if (rv = APR_ANYLOCK_UNLOCK(&rl->write_lock), APR_SUCCESS != rv) {
+        return rv;
+    }
 
-    return APR_SUCCESS;
+    /* Get the read lock */
+    return APR_ANYLOCK_LOCK(&rl->read_lock);
+}
+
+/* Release the lock on the log
+ */
+static apr_status_t ap_unlock_log(rotated_log *rl, request_rec *r) {
+    return APR_ANYLOCK_UNLOCK(&rl->read_lock);
 }
 
 /* Called by mod_log_config to write a log file line.
@@ -264,7 +287,7 @@ static apr_status_t ap_rotated_log_writer(request_rec *r, void *handle,
         return rv;
     }
 
-    return APR_SUCCESS;
+    return ap_unlock_log(rl, r);
 }
 
 /* Called my mod_log_config to initialise a log writer.
