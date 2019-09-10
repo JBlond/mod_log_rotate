@@ -182,7 +182,7 @@ static apr_status_t ap_lock_log(rotated_log *rl, request_rec *r) {
     }
 
     /* Decide if the quantized time has rolled over into a new slot. */
-    if (logt == rl->logtime) { return APR_SUCCESS; }
+    if (logt == rl->logtime && NULL != rl->fd) { return APR_SUCCESS; }
 
     /* Unlock the read lock */
     if (rv = APR_ANYLOCK_UNLOCK(&rl->read_lock), APR_SUCCESS != rv) {
@@ -197,7 +197,7 @@ static apr_status_t ap_lock_log(rotated_log *rl, request_rec *r) {
     /* Now check again in case someone else rotated the log while we waited
      * for the write lock.
      */
-    if (logt == rl->logtime) {
+    if (logt == rl->logtime && NULL != rl->fd) {
         /* Unlock the write lock */
         if (rv = APR_ANYLOCK_UNLOCK(&rl->write_lock), APR_SUCCESS != rv) {
             return rv;
@@ -238,6 +238,11 @@ static apr_status_t ap_lock_log(rotated_log *rl, request_rec *r) {
         return rv;
     }
 
+    /* If we don't have a file, return an error */
+    if (NULL == rl->fd) {
+        return APR_ENOENT;
+    }
+
     /* Get the read lock */
     return APR_ANYLOCK_LOCK(&rl->read_lock);
 }
@@ -263,10 +268,6 @@ static apr_status_t ap_rotated_log_writer(request_rec *r, void *handle,
         ap_log_rerror(APLOG_MARK, APLOG_CRIT, APR_EGENERAL, r,
             "log rotation information not found.");
         return APR_EGENERAL;
-    }
-
-    if (NULL == rl->fd)  {
-        return APR_SUCCESS; /* Should we complain? */
     }
 
     str = apr_palloc(r->pool, len + 1);
@@ -372,6 +373,14 @@ static void *ap_rotated_log_writer_init(apr_pool_t *p, server_rec *s, const char
 
     if (rl->fd = ap_open_log(rl->pool, s, rl->fname, &rl->st, rl->logtime), NULL == rl->fd) {
         return NULL;
+    }
+
+    /* If we are the parent */
+    if (NULL == getenv("AP_PARENT_PID")) {
+        /* Close the file so we don't hold the handle for forever */
+        ap_close_log(s, rl->fd);
+        /* If we ever need to log, it will be re-opened on the first write */
+        rl->fd = NULL;
     }
 
     return rl;
