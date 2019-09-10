@@ -120,12 +120,12 @@ static apr_file_t *ap_open_log(apr_pool_t *p, server_rec *s, const char *name, l
     else
     {
         /* Synthesize the log name using the specified time in seconds as a
-            * suffix.  We subtract the offset here because it was added when
-            * quantizing the time but we want the name to reflect the actual
-            * time when the log rotated. We don't reverse the local time
-            * adjustment because, presumably, if you've specified local time
-            * logging you want the filenames to use local time.
-            */
+         * suffix.  We subtract the offset here because it was added when
+         * quantizing the time but we want the name to reflect the actual
+         * time when the log rotated. We don't reverse the local time
+         * adjustment because, presumably, if you've specified local time
+         * logging you want the filenames to use local time.
+         */
         name = apr_psprintf(p, "%s.%" APR_TIME_T_FMT, name, apr_time_sec(log_time));
     }
 
