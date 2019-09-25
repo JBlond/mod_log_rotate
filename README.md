@@ -13,7 +13,8 @@ Original from andya@apache.org
 	process so you save a bunch of processes and file descriptors.
 
 ## BUILD
-	See [build.md](build.md)
+
+See [build.md](build.md)
 
 ## INSTALL
 
