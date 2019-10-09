@@ -1,4 +1,4 @@
-/.libs/
+/src/.libs/
 mod_log_rotate.la
 mod_log_rotate.lo
 mod_log_rotate.o
