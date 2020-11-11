@@ -3,7 +3,7 @@ mod_log_rotate
 
 ## mod_log_rotate
 
-Original from andya@apache.org
+Original from andya apache.org
 
 ## INTRODUCTION
 
