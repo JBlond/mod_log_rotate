@@ -1,5 +1,5 @@
-mod_log_rotate
-==============
+# mod_log_rotate
+
 
 ## mod_log_rotate
 
@@ -59,13 +59,15 @@ See [build.md](build.md)
 	On Windows it is the call of strftime in timestr.c (APR) line ~ 190 [win32_strftime_extra]
 
 
-## AVAILABILITY of the original
+## AVAILABILITY
+
+### AVAILABILITY of the original
 
 	mod_log_rotate.c source code is available under the Apache License Version 2.0
 	original at http://hexten.net/assets/apache2/mod_log_rotate.c
 
-## AVAILABILITY of the modified version
+### AVAILABILITY of the modified version
 	https://github.com/JBlond/mod_log_rotate
 
-## AVAILABILITY Windows binary x86 and x64
+### AVAILABILITY Windows binary x86 and x64
 	https://www.apachehaus.com/cgi-bin/download.plx
