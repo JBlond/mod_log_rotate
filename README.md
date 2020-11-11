@@ -18,8 +18,8 @@ See [build.md](build.md)
 
 ## INSTALL
 
-	Copy mod_log_rotate.so to your Apache 2.2.x modules folder
-	.../apache22/modules/mod_log_rotate.so
+	Copy mod_log_rotate.so to your Apache 2.4.x modules folder
+	.../apache24/modules/mod_log_rotate.so
 
 ## USAGE:
 
