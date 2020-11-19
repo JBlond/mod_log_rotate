@@ -74,3 +74,7 @@ https://github.com/JBlond/mod_log_rotate
 ### AVAILABILITY Windows binary x86 and x64
 
 https://www.apachehaus.com/cgi-bin/download.plx
+
+## Contribute
+
+Contributers are welcome. Open Pull request or file an issue.
