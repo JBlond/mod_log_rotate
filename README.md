@@ -1,16 +1,13 @@
 # mod_log_rotate
 
-
-## mod_log_rotate
-
-Original from andya apache.org
+Original from andya ät apache.org
 
 ## INTRODUCTION
 
-	If you host a lot of virtual servers on a single Apache box and use the supplied rotatelogs
-	program to rotate the logs you'll notice that your process table is cluttered up with an instance
-	of rotatelogs for each virtual server. With mod_log_rotate the log rotation is handled by the server
-	process so you save a bunch of processes and file descriptors.
+If you host a lot of virtual servers on a single Apache box and use the supplied rotatelogs
+program to rotate the logs you'll notice that your process table is cluttered up with an instance
+of rotatelogs for each virtual server. With mod_log_rotate the log rotation is handled by the server
+process so you save a bunch of processes and file descriptors.
 
 ## BUILD
 
@@ -23,12 +20,16 @@ See [build.md](build.md)
 
 ## USAGE:
 
-	LoadModule log_rotate_module modules/mod_log_rotate.so
-	RotateLogs On
+```
+LoadModule log_rotate_module modules/mod_log_rotate.so
+RotateLogs On
+```
 
-	You can specify a strftime() format string as the log file name.
+You can specify a strftime() format string as the log file name.
 
-	CustomLog logs/%Y%m%d-%H%M%S.access.log common
+```
+CustomLog logs/%Y%m%d-%H%M%S.access.log common
+```
 
 ## CONFIGURATION DIRECTIVES:
 
@@ -53,21 +54,23 @@ See [build.md](build.md)
 
 ## Bugs
 
-	A wrong configured placeholder for strftime causes a crash in the module.
-	So if you use Y% instead of %Y apache crashes with a segfault. This bug is confirmed on Windows
-	and might happen on *nix based systems, too.
-	On Windows it is the call of strftime in timestr.c (APR) line ~ 190 [win32_strftime_extra]
+A wrong configured placeholder for strftime causes a crash in the module.
+So if you use Y% instead of %Y apache crashes with a segfault. This bug is confirmed on Windows
+and might happen on *nix based systems, too.
+On Windows it is the call of strftime in timestr.c (APR) line ~ 190 [win32_strftime_extra]
 
 
 ## AVAILABILITY
 
 ### AVAILABILITY of the original
 
-	mod_log_rotate.c source code is available under the Apache License Version 2.0
-	original at http://hexten.net/assets/apache2/mod_log_rotate.c
+mod_log_rotate.c source code is available under the Apache License Version 2.0
+original at http://hexten.net/assets/apache2/mod_log_rotate.c
 
 ### AVAILABILITY of the modified version
-	https://github.com/JBlond/mod_log_rotate
+
+https://github.com/JBlond/mod_log_rotate
 
 ### AVAILABILITY Windows binary x86 and x64
-	https://www.apachehaus.com/cgi-bin/download.plx
+
+https://www.apachehaus.com/cgi-bin/download.plx
