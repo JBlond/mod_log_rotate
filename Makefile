@@ -4,8 +4,8 @@ help:
 
 clean:
 	@echo ""
-	@rm src/mod_log_rotate.la
-	@rm src/mod_log_rotate.lo
-	@rm src/mod_log_rotate.o
-	@rm src/mod_log_rotate.slo
+	@rm -f src/mod_log_rotate.la
+	@rm -f src/mod_log_rotate.lo
+	@rm -f src/mod_log_rotate.o
+	@rm -f src/mod_log_rotate.slo
 	@rm -rf src/.libs/
