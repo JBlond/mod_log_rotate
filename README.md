@@ -64,8 +64,8 @@ On Windows it is the call of strftime in timestr.c (APR) line ~ 190 [win32_strft
 
 ### AVAILABILITY of the original
 
-mod_log_rotate.c source code is available under the Apache License Version 2.0
-original at http://hexten.net/assets/apache2/mod_log_rotate.c
+mod_log_rotate.c original source code under the Apache License Version 2.0
+is no longer available.
 
 ### AVAILABILITY of the modified version
 
