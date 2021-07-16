@@ -1,6 +1,7 @@
 # mod_log_rotate
 
 Original from andya ät apache.org
+
 Modified version from Mario Brandt / JBlond
 
 ## INTRODUCTION
