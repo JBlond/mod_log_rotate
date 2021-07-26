@@ -7,9 +7,11 @@ Modified version from Mario Brandt / JBlond
 ## INTRODUCTION
 
 If you host a lot of virtual servers on a single Apache box and use the supplied rotatelogs
-program to rotate the logs you'll notice that your process table is cluttered up with an instance
+program to rotate the access logs you'll notice that your process table is cluttered up with an instance
 of rotatelogs for each virtual server. With mod_log_rotate the log rotation is handled by the server
 process so you save a bunch of processes and file descriptors.
+
+Note: error log files can not be rotated with this module.
 
 ## BUILD
 
